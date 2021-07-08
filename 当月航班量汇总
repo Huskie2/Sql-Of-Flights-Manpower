@@ -1,0 +1,41 @@
+select
+      a.年份,
+      a.月份,
+      a.月度汇总,
+      a.月度汇总-b.月度汇总 环比
+from (
+select
+      substr(运行日期,1,4) 年份,
+      substr(运行日期,6,2) 月份,
+      sum(cast(总执行航班量 as signed)) 月度汇总
+from (
+select 
+      date_format(reportdate,'%Y%m%d') 简报日期,
+      date_sub(date_format(reportdate,'%Y%m%d'),interval 1 day) 运行日期,
+      planflightallcount 总执行航班量
+from rpt_flightruninfo
+where date_format(reportdate,'%Y%m%d') > DATE_FORMAT(last_day(date_sub(date_sub(curdate(),interval 1 day),interval 1 month)), '%Y%m%d')
+  and date_format(reportdate,'%Y%m%d') <= DATE_FORMAT(date_sub(curdate(),interval 1 day), '%Y%m%d')
+) t
+where 运行日期 > DATE_FORMAT(last_day(date_sub(date_sub(curdate(),interval 1 day),interval 1 month)), '%Y-%m-%d')
+  and 运行日期 <= DATE_FORMAT(date_sub(curdate(),interval 1 day), '%Y-%m-%d')
+group by substr(运行日期,1,4),substr(运行日期,6,2)
+) a
+cross join (
+select
+      substr(运行日期,1,4) 年份,
+      substr(运行日期,6,2) 月份,
+      sum(cast(总执行航班量 as signed)) 月度汇总
+from (
+select 
+      date_format(reportdate,'%Y%m%d') 简报日期,
+      date_sub(date_format(reportdate,'%Y%m%d'),interval 1 day) 运行日期,
+      planflightallcount 总执行航班量
+from rpt_flightruninfo
+where date_format(reportdate,'%Y%m%d') > DATE_FORMAT(last_day(date_sub(date_sub(curdate(),interval 1 day),interval 2 month)), '%Y%m%d')
+  and date_format(reportdate,'%Y%m%d') <= DATE_FORMAT(date_sub(date_sub(curdate(),interval 1 day),interval 1 month), '%Y%m%d')
+) t
+where 运行日期 > DATE_FORMAT(last_day(date_sub(date_sub(curdate(),interval 1 day),interval 2 month)), '%Y-%m-%d')
+  and 运行日期 <= DATE_FORMAT(date_sub(date_sub(curdate(),interval 1 day),interval 1 month), '%Y-%m-%d')
+group by substr(运行日期,1,4),substr(运行日期,6,2)
+) b
